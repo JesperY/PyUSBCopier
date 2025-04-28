@@ -80,6 +80,8 @@ class USBMonitor:
             logger.info("User interrupted, stopping monitoring")
 
 def main():
+    # TODO windows 托盘
+    # TODO 日志文件按日期分割，只保留最近七天
     logger.info("Program started")
     monitor = USBMonitor()
     try:
