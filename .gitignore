@@ -1,2 +1,4 @@
  # 忽略logs文件夹及其所有内容
 logs/
+backup/
+__pycache__/
