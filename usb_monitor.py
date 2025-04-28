@@ -57,7 +57,7 @@ class USBMonitor:
     def monitor(self) -> None:
         """Monitor USB storage devices"""
         logger.info("Starting USB drive monitoring...")
-        print("Monitoring USB drives. Messages will be displayed when USB storage devices are connected or disconnected...")
+        # print("Monitoring USB drives. Messages will be displayed when USB storage devices are connected or disconnected...")
         
         # Initialize device list
         self.last_usb_drives = self.get_usb_drives()
@@ -77,7 +77,6 @@ class USBMonitor:
                 time.sleep(1)
                 
         except KeyboardInterrupt:
-            print("Monitoring stopped")
             logger.info("User interrupted, stopping monitoring")
 
 def main():

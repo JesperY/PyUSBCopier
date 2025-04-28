@@ -2,3 +2,5 @@
 logs/
 backup/
 __pycache__/
+
+*_test.py
