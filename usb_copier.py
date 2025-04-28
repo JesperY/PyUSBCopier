@@ -25,23 +25,40 @@ class USBcopier:
         """
         # 检查目录名
         if os.path.isdir(source_path) and config.white_list.get('dirname'):
-            logger.debug("check dirname: " + os.path.basename(source_path))
+            # logger.debug("check dirname: " + os.path.basename(source_path))
             if os.path.dirname(source_path) in config.white_list.dirname:
+                logger.debug(f"Path {source_path} is in whitelist, skipping.")
                 return True
         else:
             
             # 检查文件名
             if config.white_list.get('filename'):
-                logger.debug("check filename: " + os.path.splitext(os.path.basename(source_path))[0])
+                # logger.debug("check filename: " + os.path.splitext(os.path.basename(source_path))[0])
                 if os.path.splitext(os.path.basename(source_path))[0] in config.white_list.get('filename'):
+                    logger.debug(f"Path {source_path} is in whitelist, skipping.")
                     return True
             # 检查后缀名
             if config.white_list.get('suffix'):
-                logger.debug("check suffix: " + os.path.splitext(os.path.basename(source_path))[-1])
+                # logger.debug("check suffix: " + os.path.splitext(os.path.basename(source_path))[-1])
                 if os.path.splitext(source_path)[-1] in config.white_list.get('suffix'):
+                    logger.debug(f"Path {source_path} is in whitelist, skipping.")
                     return True
         return False
     
+    def is_new_file(self, source_path: str, dst_path: str) -> bool:
+        """
+        Check if the source path is a new file
+        
+        Args:
+            source_path (str): source path need to be checked
+
+        Returns:
+            bool: True if the source path is a new file, False otherwise
+        """
+        if os.path.isfile(source_path):
+            if os.path.isfile(dst_path):
+                return os.path.getmtime(source_path) > os.path.getmtime(dst_path)
+        return False
 
     def get_volume_serial(self, drive_letter):
         """
@@ -87,6 +104,9 @@ class USBcopier:
         if self.is_white_list(src):
             logger.info(f"Path {src} is in whitelist, skipping.")
             return
+        if not self.is_new_file(src, dst):
+            logger.info(f"Path {src} is not a new version, skipping.")
+            return
         
         if os.path.isdir(src):
             os.makedirs(dst, exist_ok=True)
@@ -99,8 +119,7 @@ class USBcopier:
             logger.info(f"Copied file: {src} -> {dst}")
 
     # 执行备份操作
-    # TODO 按需备份
-    # TODO 优化git开发流程
+    # TODO 按需备份，仅在文件需要更新时进行备份
     def do_copy(self, source) -> bool:
         """
         do copy
