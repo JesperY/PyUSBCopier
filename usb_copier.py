@@ -8,25 +8,50 @@ from logger import logger
 from config import config
 import ctypes
 
+
 class USBcopier:
     def __init__(self) -> None:
         pass
 
-    # TODO 备份白名单：盘符/盘名 目录名 文件名 后缀名
     def is_white_list(self, source_path: str) -> bool:
-        # print(source_path)
+        """
+        Check if the source path is in the white list
+
+        Args:
+            source_path (str): source path need to be checked
+
+        Returns:
+            bool: True if the source path is in the white list, False otherwise
+        """
+        # 检查目录名
+        if os.path.isdir(source_path) and config.white_list.get('dirname'):
+            logger.debug("check dirname: " + os.path.basename(source_path))
+            if os.path.dirname(source_path) in config.white_list.dirname:
+                return True
+        else:
+            
+            # 检查文件名
+            if config.white_list.get('filename'):
+                logger.debug("check filename: " + os.path.splitext(os.path.basename(source_path))[0])
+                if os.path.splitext(os.path.basename(source_path))[0] in config.white_list.get('filename'):
+                    return True
+            # 检查后缀名
+            if config.white_list.get('suffix'):
+                logger.debug("check suffix: " + os.path.splitext(os.path.basename(source_path))[-1])
+                if os.path.splitext(source_path)[-1] in config.white_list.get('suffix'):
+                    return True
         return False
     
 
     def get_volume_serial(self, drive_letter):
         """
-        获取指定盘符的卷序列号（Volume Serial Number），可作为USB设备的唯一标识符。
+        Get the volume serial number of the specified drive letter (Volume Serial Number), which can be used as the unique identifier of the USB device.
 
         Args:
-            drive_letter (str): 盘符字符串，如 'E:\\'
+            drive_letter (str): drive letter string, e.g. 'E:\\'
 
         Returns:
-            str or None: 卷序列号（8位大写十六进制字符串），获取失败时返回 None
+            str or None: volume serial number (8-digit uppercase hexadecimal string), return None if failed
         """
         # drive_letter: 'E:\\'
         volume_name_buf = ctypes.create_unicode_buffer(1024)
@@ -52,17 +77,17 @@ class USBcopier:
 
     def copy_with_filter(self, src, dst, symlinks=False):
         """
-        递归复制 src 目录下的所有内容到 dst 目录下。
-        可在 check_white_list 中实现白名单过滤。
+        Recursively copy all contents of src directory to dst directory.
 
         Args:
-            src (str): 源路径
-            dst (str): 目标路径
-            symlinks (bool): 是否保留符号链接
+            src (str): source path
+            dst (str): destination path
+            symlinks (bool): whether to preserve symlinks
         """
         if self.is_white_list(src):
             logger.info(f"Path {src} is in whitelist, skipping.")
             return
+        
         if os.path.isdir(src):
             os.makedirs(dst, exist_ok=True)
             for item in os.listdir(src):

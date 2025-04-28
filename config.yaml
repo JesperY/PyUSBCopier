@@ -1,1 +1,6 @@
 backup_dst: backup
+white_list:
+  dirname: []
+  filename: []
+  suffix:
+  - .iso
