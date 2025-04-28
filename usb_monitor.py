@@ -1,31 +1,26 @@
+# @Time: 2025/04/27
+# @Author: Junpo Yu
+# @Email: junpo_yu@163.com
+
 import wmi
-import logging
+import logger
 from typing import Set
 import time
 import os
 import win32com.client
-
-# Ensure log directory exists
-log_dir = 'logs'
-if not os.path.exists(log_dir):
-    os.makedirs(log_dir)
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler(os.path.join(log_dir, 'usb_monitor.log')),
-        logging.StreamHandler()
-    ]
-)
+from config import config
+from logger import logger
+from usb_copier import USBcopier
 
 class USBMonitor:
     def __init__(self):
         """Initialize USB monitor"""
         self.wmi_obj = wmi.WMI()
         self.last_usb_drives: Set[str] = set()
-        logging.info("USB monitor initialized")
+        self.copier = USBcopier()
+        
+        logger.info("USB monitor initialized")
+                
         
     def get_usb_drives(self) -> Set[str]:
         """Get all USB storage devices with drive letters"""
@@ -43,7 +38,7 @@ class USBMonitor:
             
             return drives
         except Exception as e:
-            logging.error(f"Failed to get USB drive list: {str(e)}")
+            logger.error(f"Failed to get USB drive list: {str(e)}")
             return set()
 
     def detect_usb_change(self, current_drives: Set[str]) -> str:
@@ -52,47 +47,48 @@ class USBMonitor:
         added = current_drives - self.last_usb_drives
         
         if removed:
-            logging.info(f"USB drive(s) removed: {removed}")
-            return f'USB drive(s) removed: {", ".join(removed)}'
+            logger.info(f"USB drive(s) removed: {removed}")
+            # return f'USB drive(s) removed: {", ".join(removed)}'
         elif added:
-            logging.info(f"USB drive(s) inserted: {added}")
-            return f'USB drive(s) inserted: {", ".join(added)}'
-        return ''
+            logger.info(f"USB drive(s) inserted: {added}")
+            # return f'USB drive(s) inserted: {", ".join(added)}'
+        return added
 
     def monitor(self) -> None:
         """Monitor USB storage devices"""
-        logging.info("Starting USB drive monitoring...")
+        logger.info("Starting USB drive monitoring...")
         print("Monitoring USB drives. Messages will be displayed when USB storage devices are connected or disconnected...")
         
         # Initialize device list
         self.last_usb_drives = self.get_usb_drives()
-        logging.info(f"Initial USB drives: {self.last_usb_drives}")
+        logger.info(f"Initial USB drives: {self.last_usb_drives}")
         
         try:
             while True:
                 current_drives = self.get_usb_drives()
-                message = self.detect_usb_change(current_drives)
+                added_drives = self.detect_usb_change(current_drives)
                 
-                if message:
-                    print(message)
-                    logging.info(message)
+                if added_drives:
+                    for drive in added_drives:
+                        logger.info(f'copying drive: {drive}')
+                        self.copier.do_copy(drive)
                 
                 self.last_usb_drives = current_drives
                 time.sleep(1)
                 
         except KeyboardInterrupt:
             print("Monitoring stopped")
-            logging.info("User interrupted, stopping monitoring")
+            logger.info("User interrupted, stopping monitoring")
 
 def main():
-    logging.info("Program started")
+    logger.info("Program started")
     monitor = USBMonitor()
     try:
         monitor.monitor()
     except Exception as e:
-        logging.error(f"Program error: {str(e)}")
+        logger.error(f"Program error: {str(e)}")
     finally:
-        logging.info("Program ended")
+        logger.info("Program ended")
         
 if __name__ == '__main__':
     main()
