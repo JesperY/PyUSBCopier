@@ -5,7 +5,7 @@
 import os
 import shutil
 from logger import logger
-from config import config
+from Config import config
 import ctypes
 
 
@@ -119,7 +119,6 @@ class USBcopier:
             logger.info(f"Copied file: {src} -> {dst}")
 
     # 执行备份操作
-    # TODO 按需备份，仅在文件需要更新时进行备份
     def do_copy(self, source) -> bool:
         """
         do copy
