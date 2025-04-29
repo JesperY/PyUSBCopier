@@ -1,4 +1,4 @@
-#PyUSBCopier
+# PyUSBCopier
 这是一款基于 Python 实现的 USB 存储设备备份工具，目前尚在 Demo 阶段。
 
 # tips
