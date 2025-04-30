@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - 'v*.*.*'  # 当推送符合v*.*.*(如v1.0.0)格式的标签时触发
+  workflow_dispatch:  # 添加手动触发
+    inputs:
+      version:
+        description: 'Version to build (e.g., 1.0.0)'
+        required: true
+        type: string
 permissions:
   contents: write
 jobs:
@@ -27,7 +33,12 @@ jobs:
       
       - name: Get tag version
         id: get_version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
+          else
+            echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+          fi
         shell: bash
       
       - name: Build with PyInstaller
