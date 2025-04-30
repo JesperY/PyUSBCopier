@@ -24,13 +24,19 @@ class USBBackupApp(QObject):
         # 创建系统托盘图标
         self.tray_icon = QSystemTrayIcon()
         
-        # 设置图标（您需要提供一个图标文件）
-        icon_path = "icon.png"  # 替换为您的图标路径
-        if not os.path.exists(icon_path):
-            self.tray_icon.setIcon(self.app.style().standardIcon(self.app.style().StandardPixmap.SP_ComputerIcon))
-        else:
-            self.tray_icon.setIcon(QIcon(icon_path))
-        
+        # 设置图标
+        icon_path = "icon.ico"  # 使用.ico格式的图标文件
+        try:
+            if os.path.exists(icon_path):
+                self.tray_icon.setIcon(QIcon(icon_path))
+            else:
+                # 如果图标文件不存在，使用系统标准图标
+                self.tray_icon.setIcon(QIcon(self.app.style().standardIcon(self.app.style().StandardPixmap.SP_DriveFDIcon)))
+                logger.warning(f"图标文件 {icon_path} 不存在，使用系统默认图标")
+        except Exception as e:
+            logger.error(f"设置系统托盘图标失败: {str(e)}")
+            # 出错时使用备用图标
+            self.tray_icon.setIcon(QIcon(self.app.style().standardIcon(self.app.style().StandardPixmap.SP_ComputerIcon)))
         # 创建菜单
         self.tray_menu = QMenu()
         
