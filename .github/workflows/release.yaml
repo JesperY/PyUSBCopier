@@ -52,6 +52,5 @@ jobs:
           generate_release_notes: true
           files: |
             dist/PyUSBCopier_${{ env.VERSION }}.exe
-            # dist/PyUSBCopier_${{ env.VERSION }}.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
