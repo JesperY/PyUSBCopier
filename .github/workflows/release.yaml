@@ -40,7 +40,17 @@ jobs:
             echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
           fi
         shell: bash
-      
+
+      - name: Create git tag
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "v${{ env.VERSION }}" -m "Release v${{ env.VERSION }}"
+          git push origin "v${{ env.VERSION }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Build with PyInstaller
         run: |
           pyinstaller --onefile --windowed --icon=icon.ico --name=PyUSBCopier_${{ env.VERSION }} main.py
