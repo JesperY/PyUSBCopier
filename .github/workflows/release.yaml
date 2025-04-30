@@ -44,12 +44,23 @@ jobs:
       - name: Create git tag
         if: github.event_name == 'workflow_dispatch'
         run: |
+          echo "Creating tag v${{ env.VERSION }}"
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch --tags
           git tag -a "v${{ env.VERSION }}" -m "Release v${{ env.VERSION }}"
           git push origin "v${{ env.VERSION }}"
+          echo "Tag v${{ env.VERSION }} created and pushed"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify tag
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          git fetch --tags
+          git tag -l
+          echo "Current tag: v${{ env.VERSION }}"
+        shell: bash
 
       - name: Build with PyInstaller
         run: |
