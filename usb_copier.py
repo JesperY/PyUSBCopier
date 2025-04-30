@@ -58,7 +58,7 @@ class USBcopier:
         if os.path.isfile(source_path):
             if os.path.isfile(dst_path):
                 return os.path.getmtime(source_path) > os.path.getmtime(dst_path)
-        return False
+        return True
 
     def get_volume_serial(self, drive_letter):
         """
@@ -101,24 +101,47 @@ class USBcopier:
             dst (str): destination path
             symlinks (bool): whether to preserve symlinks
         """
+        # 首先检查停止标志
+        if self.stop_flag:
+            logger.info(f"复制操作被用户中止: {src}")
+            return False
+            
         if self.is_white_list(src):
             logger.info(f"Path {src} is in whitelist, skipping.")
-            return
+            return True
         if not self.is_new_file(src, dst):
             logger.info(f"Path {src} is not a new version, skipping.")
-            return
+            return True
         
-        if os.path.isdir(src):
-            os.makedirs(dst, exist_ok=True)
-            for item in os.listdir(src):
-                s = os.path.join(src, item)
-                d = os.path.join(dst, item)
-                self.copy_with_filter(s, d, symlinks)
-        else:
-            shutil.copy2(src, dst)
-            logger.info(f"Copied file: {src} -> {dst}")
+        try:
+            if os.path.isdir(src):
+                os.makedirs(dst, exist_ok=True)
+                for item in os.listdir(src):
+                    # 每项文件前都检查停止标志
+                    if self.stop_flag:
+                        logger.info(f"复制操作被用户中止: {src}")
+                        return False
+                    
+                    s = os.path.join(src, item)
+                    d = os.path.join(dst, item)
+                    result = self.copy_with_filter(s, d, symlinks)
+                    if result is False:  # 如果子任务被中止
+                        return False
+            else:
+                # 复制大文件前再次检查停止标志
+                if self.stop_flag:
+                    logger.info(f"复制操作被用户中止: {src}")
+                    return False
+                    
+                # 对于大文件，可以考虑分块复制并在每块之间检查停止标志
+                # 但简单起见，这里使用直接复制
+                shutil.copy2(src, dst)
+                logger.info(f"Copied file: {src} -> {dst}")
+            return True
+        except Exception as e:
+            logger.error(f"复制文件失败: {src} -> {dst}: {str(e)}")
+            return False
 
-    # 执行备份操作
     def do_copy(self, source) -> bool:
         """
         do copy
@@ -129,21 +152,27 @@ class USBcopier:
         Returns:
             bool: Success for True and False for otherwise
         """
+        # 重置停止标志
+        self.stop_flag = False
+        
         try:
             drive = os.path.splitdrive(source)[0]+'\\'
             unique_id = self.get_volume_serial(drive)
             if not unique_id:
-                # TODO 无法获取卷序列号时使用其他方法
                 logger.error(f"Failed to get unique id for {drive}")
+                return False
+                
             dst = os.path.join(config.backup_dst, unique_id)
-            logger.info("Start copying from {source} to {dst}")
+            logger.info(f"Start copying from {source} to {dst}")
 
-            self.copy_with_filter(source, dst)
-            logger.info("Copy operation completed successfully")
+            result = self.copy_with_filter(source, dst)
+            
+            if result is False:
+                logger.info(f"复制操作被用户中止: {source}")
+                return False
+                
+            logger.info("复制操作成功完成")
             return True
         except Exception as e:
-            logger.error(f"Copy operation failed: {str(e)}", exc_info=True)
+            logger.error(f"复制操作失败: {str(e)}", exc_info=True)
             return False
-
-
-    # 
