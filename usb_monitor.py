@@ -8,7 +8,7 @@ from typing import Set
 import time
 import os
 import win32com.client
-from Config import config
+from config import config
 from logger import logger
 from usb_copier import USBcopier
 
