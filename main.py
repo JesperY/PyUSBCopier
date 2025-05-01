@@ -111,7 +111,7 @@ class USBBackupApp(QObject):
             self.status_action.setText("状态: 监控中")
             self.toggle_monitor_action.setText("停止监控")
             logger.info("USB监控已启动")
-            self.tray_icon.showMessage("USB备份工具", "USB监控已启动", QSystemTrayIcon.MessageIcon.Information, 2000)
+            # self.tray_icon.showMessage("USB备份工具", "USB监控已启动", QSystemTrayIcon.MessageIcon.Information, 2000)
     
     def stop_monitor(self):
         """停止USB监控线程"""
@@ -126,8 +126,8 @@ class USBBackupApp(QObject):
         if hasattr(self.monitor.copier, 'stop_flag'):
             self.monitor.copier.stop_flag = True
             logger.info("已发送停止复制信号")
-            self.tray_icon.showMessage("USB备份工具", "正在停止复制操作，请稍候...", 
-                                      QSystemTrayIcon.MessageIcon.Information, 1500)
+            # self.tray_icon.showMessage("USB备份工具", "正在停止复制操作，请稍候...", 
+            #                           QSystemTrayIcon.MessageIcon.Information, 1500)
     
     def run_monitor(self):
         """在单独的线程中运行监控"""
@@ -187,7 +187,7 @@ class USBBackupApp(QObject):
         self.status_action.setText("状态: 已停止")
         self.toggle_monitor_action.setText("启动监控")
         logger.info("USB监控已停止")
-        self.tray_icon.showMessage("USB备份工具", "USB监控已停止", QSystemTrayIcon.MessageIcon.Information, 2000)
+        # self.tray_icon.showMessage("USB备份工具", "USB监控已停止", QSystemTrayIcon.MessageIcon.Information, 2000)
     
     def on_copy_status_changed(self, is_copying):
         """复制状态变更处理"""
@@ -244,12 +244,12 @@ class USBBackupApp(QObject):
     
     def run(self):
         """运行应用程序"""
-        self.tray_icon.showMessage(
-            "USB备份工具", 
-            "应用程序已在后台启动，将自动监控USB设备插入", 
-            QSystemTrayIcon.MessageIcon.Information, 
-            3000
-        )
+        # self.tray_icon.showMessage(
+        #     "USB备份工具", 
+        #     "应用程序已在后台启动，将自动监控USB设备插入", 
+        #     QSystemTrayIcon.MessageIcon.Information, 
+        #     3000
+        # )
         
         return self.app.exec()
 
