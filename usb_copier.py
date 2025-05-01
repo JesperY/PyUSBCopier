@@ -5,7 +5,7 @@
 import os
 import shutil
 from logger import logger
-from Config import config
+from config import config
 import ctypes
 
 
