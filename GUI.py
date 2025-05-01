@@ -9,7 +9,7 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
 from PyQt6.QtGui import QFont
 from PyQt6.QtCore import Qt
 
-from Config import config  # 导入您的配置类
+from config import config  # 导入您的配置类
 
 class ConfigEditorGUI(QMainWindow):
     def __init__(self):
