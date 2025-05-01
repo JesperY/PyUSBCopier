@@ -60,12 +60,13 @@ jobs:
 
       - name: Build with PyInstaller
         run: |
-          pyinstaller --onefile --windowed --icon=icon.ico --name=PyUSBCopier_${{ env.VERSION }} main.py
+          pyinstaller --onefile --windowed --icon=icon.ico --name=PyUSBCopier_${{ env.VERSION }} --collect-all=. main.py
         # 参数说明：
         # --onefile: 打包为单个exe文件
         # --windowed: 运行时不显示控制台窗口
         # --icon: 指定应用图标（请确保icon.ico文件存在）
         # --name: 指定输出文件名称
+        # --collect-all=.: 包含当前目录下的所有模块和资源
         
       - name: Create Release
         id: create_release
