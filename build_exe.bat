@@ -10,7 +10,23 @@ if not exist src\resources mkdir src\resources
 echo Icon file check completed.
 
 echo Creating PyInstaller spec file...
-pyinstaller --name=USBBackup --clean --windowed --icon=src\resources\icon.ico --hidden-import=PyQt6 --hidden-import=PyQt6.QtCore --hidden-import=PyQt6.QtGui --hidden-import=PyQt6.QtWidgets --add-data "src\resources;src\resources" --hidden-import=win32api --hidden-import=win32file src\main.py
+pyinstaller --name=USBBackup --onefile --clean --windowed --icon=src\resources\icon.ico ^
+  --hidden-import=PyQt6 ^
+  --hidden-import=PyQt6.QtCore ^
+  --hidden-import=PyQt6.QtGui ^
+  --hidden-import=PyQt6.QtWidgets ^
+  --hidden-import=win32api ^
+  --hidden-import=win32file ^
+  --hidden-import=yaml ^
+  --hidden-import=src.core.config ^
+  --hidden-import=src.core.monitor ^
+  --hidden-import=src.core.usb_copier ^
+  --hidden-import=src.gui.tray_icon ^
+  --hidden-import=src.gui.icons ^
+  --hidden-import=src.gui.config_editor ^
+  --collect-all PyQt6 ^
+  --add-data "src\resources;resources" ^
+  src\main.py
 
 echo Building executable...
 pyinstaller USBBackup.spec
