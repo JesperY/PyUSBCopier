@@ -6,5 +6,5 @@ __pycache__/
 *_test.py
 build/ 
 dist/
-*.spec
+# *.spec
 
