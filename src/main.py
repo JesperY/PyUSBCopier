@@ -142,8 +142,12 @@ def main():
             sys.exit(1)
 
 # TODO 避免重复运行
-# TODO 开机自启动
+# TODO 开机自启动   
 # TODO 配置文件保存到系统目录，更新版本后自动读取默认配置文件
 # TODO 启动提示
+# TODO 优化更新方式，能否在软件中自动拉取更新
+# TODO 仅复制较新的文件
+# TODO 备份目录使用卷标识符
+# TODO 日志文件按日期保存
 if __name__ == "__main__":
     main() 
