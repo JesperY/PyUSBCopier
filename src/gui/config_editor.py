@@ -1,7 +1,4 @@
-import sys
-import os
-import yaml
-from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
+from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, 
                             QHBoxLayout, QPushButton, QLabel, QLineEdit, 
                             QListWidget, QListWidgetItem, QFileDialog,
                             QGridLayout, QMessageBox, QFrame, QGroupBox,
@@ -9,19 +6,22 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
 from PyQt6.QtGui import QFont
 from PyQt6.QtCore import Qt
 
-from config import config  # 导入您的配置类
+from ..core.config import config
+from .icons import get_icon
 
 class ConfigEditorGUI(QMainWindow):
+    """配置编辑器界面"""
     def __init__(self):
         super().__init__()
         
-        # 加载配置
-        self.config = config
+        # 设置窗口图标
+        self.setWindowIcon(get_icon())
         
         # 初始化UI
         self.initUI()
         
     def initUI(self):
+        """初始化用户界面"""
         # 设置窗口基本属性
         self.setWindowTitle('配置编辑器')
         self.setGeometry(300, 300, 700, 600)
@@ -52,7 +52,7 @@ class ConfigEditorGUI(QMainWindow):
         
         # 备份目标路径
         backup_label = QLabel('备份目标路径:')
-        self.backup_path_edit = QLineEdit(self.config.backup_dst)
+        self.backup_path_edit = QLineEdit(config.backup_dst)
         browse_button = QPushButton('浏览...')
         browse_button.clicked.connect(self.browse_backup_dir)
         
@@ -73,8 +73,8 @@ class ConfigEditorGUI(QMainWindow):
         dirname_layout = QVBoxLayout(dirname_group)
         
         self.dirname_list = QListWidget()
-        self.dirname_list.setMaximumHeight(120)  # 限制列表高度
-        self.load_list_items(self.dirname_list, self.config.white_list.get('dirname', []))
+        self.dirname_list.setMaximumHeight(120)
+        self.load_list_items(self.dirname_list, config.white_list.get('dirname', []))
         
         dirname_buttons_layout = QHBoxLayout()
         add_dirname_btn = QPushButton('添加')
@@ -95,8 +95,8 @@ class ConfigEditorGUI(QMainWindow):
         filename_layout = QVBoxLayout(filename_group)
         
         self.filename_list = QListWidget()
-        self.filename_list.setMaximumHeight(120)  # 限制列表高度
-        self.load_list_items(self.filename_list, self.config.white_list.get('filename', []))
+        self.filename_list.setMaximumHeight(120)
+        self.load_list_items(self.filename_list, config.white_list.get('filename', []))
         
         filename_buttons_layout = QHBoxLayout()
         add_filename_btn = QPushButton('添加')
@@ -117,8 +117,8 @@ class ConfigEditorGUI(QMainWindow):
         suffix_layout = QVBoxLayout(suffix_group)
         
         self.suffix_list = QListWidget()
-        self.suffix_list.setMaximumHeight(120)  # 限制列表高度
-        self.load_list_items(self.suffix_list, self.config.white_list.get('suffix', []))
+        self.suffix_list.setMaximumHeight(120)
+        self.load_list_items(self.suffix_list, config.white_list.get('suffix', []))
         
         suffix_buttons_layout = QHBoxLayout()
         add_suffix_btn = QPushButton('添加')
@@ -160,7 +160,7 @@ class ConfigEditorGUI(QMainWindow):
         button_layout.addWidget(cancel_btn)
         
         main_layout.addLayout(button_layout)
-        
+    
     def load_list_items(self, list_widget, items):
         """加载列表项到QListWidget"""
         list_widget.clear()
@@ -198,17 +198,12 @@ class ConfigEditorGUI(QMainWindow):
             }
         }
         
-        # 写入配置文件
-        try:
-            with open('config.yaml', 'w', encoding='utf-8') as f:
-                yaml.dump(config_data, f, allow_unicode=True)
-            
+        # 保存配置
+        if config.save_config(config_data):
             QMessageBox.information(self, '成功', '配置已保存')
-            
-            # 重新加载配置
-            self.config.reload()
-        except Exception as e:
-            QMessageBox.critical(self, '错误', f'保存配置失败: {str(e)}')
+            config.reload()
+        else:
+            QMessageBox.critical(self, '错误', '保存配置失败')
     
     def reset_to_default(self):
         """重置为默认配置"""
@@ -216,22 +211,13 @@ class ConfigEditorGUI(QMainWindow):
                                      QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
         
         if reply == QMessageBox.StandardButton.Yes:
-            self.config.write_default()
-            self.config.reload()
-            
-            # 更新UI
-            self.backup_path_edit.setText(self.config.backup_dst)
-            self.load_list_items(self.dirname_list, self.config.white_list.get('dirname', []))
-            self.load_list_items(self.filename_list, self.config.white_list.get('filename', []))
-            self.load_list_items(self.suffix_list, self.config.white_list.get('suffix', []))
-            
-            QMessageBox.information(self, '成功', '已重置为默认配置')
-
-def main():
-    app = QApplication(sys.argv)
-    ex = ConfigEditorGUI()
-    ex.show()
-    sys.exit(app.exec())
-
-if __name__ == '__main__':
-    main()
+            if config.write_default():
+                config.reload()
+                # 更新UI
+                self.backup_path_edit.setText(config.backup_dst)
+                self.load_list_items(self.dirname_list, config.white_list.get('dirname', []))
+                self.load_list_items(self.filename_list, config.white_list.get('filename', []))
+                self.load_list_items(self.suffix_list, config.white_list.get('suffix', []))
+                QMessageBox.information(self, '成功', '已重置为默认配置')
+            else:
+                QMessageBox.critical(self, '错误', '重置配置失败') 
