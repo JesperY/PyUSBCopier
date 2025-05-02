@@ -1,4 +1,4 @@
-backup_dst: backup
+backup_dst: D:\USBbackup
 white_list:
   dirname: []
   filename: []

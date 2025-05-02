@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - 'v*.*.*'  # 当推送符合v*.*.*(如v1.0.0)格式的标签时触发
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (without v prefix)'
+        required: true
+        default: '1.0.0'
 
 permissions:
   contents: write
@@ -58,15 +64,20 @@ jobs:
           echo "Current tag: v${{ env.VERSION }}"
         shell: bash
 
+      - name: Display directory structure
+        run: |
+          dir /s
+        shell: cmd
+      
       - name: Build with PyInstaller
         run: |
-          pyinstaller --onefile --windowed --icon=icon.ico --name=PyUSBCopier_${{ env.VERSION }} --collect-all=. main.py
-        # 参数说明：
-        # --onefile: 打包为单个exe文件
-        # --windowed: 运行时不显示控制台窗口
-        # --icon: 指定应用图标（请确保icon.ico文件存在）
-        # --name: 指定输出文件名称
-        # --collect-all=.: 包含当前目录下的所有模块和资源
+          pyinstaller USBBackup.spec
+        # 使用spec文件打包，spec文件中已配置好资源文件
+        
+      - name: Rename output file
+        run: |
+          copy dist\USBBackup.exe dist\PyUSBCopier_${{ env.VERSION }}.exe
+        shell: cmd
         
       - name: Create Release
         id: create_release
