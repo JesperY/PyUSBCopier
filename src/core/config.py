@@ -6,10 +6,11 @@ from .logger import logger
 class Config:
     """Configuration management class"""
     def __init__(self):
-        self.config_file = 'config/config.yaml'
+        self.config_file = 'config/config.yaml' # path of config file
         # Ensure config directory exists
-        os.makedirs(os.path.dirname(self.config_file), exist_ok=True)
+        os.makedirs(os.path.dirname(self.config_file), exist_ok=True) # ensure the directory exists
         
+        # default config
         self.default_config = {
             'backup_dst': os.path.join(os.path.expanduser('~'), 'USBBackup'),
             'white_list': {
@@ -18,10 +19,16 @@ class Config:
                 'suffix': []
             }
         }
+
+        # load config file
         self.config = self.load_config()
     
     def load_config(self) -> Dict[str, Any]:
-        """Load configuration file"""
+        """Load configuration file
+
+        Returns:
+            Dict[str, Any]: Configuration data
+        """
         if os.path.exists(self.config_file):
             try:
                 with open(self.config_file, 'r', encoding='utf-8') as f:
@@ -32,11 +39,18 @@ class Config:
         return self.default_config.copy()
     
     def save_config(self, config_data: Dict[str, Any]) -> bool:
-        """Save configuration to file"""
+        """Save configuration to file
+        
+        Args:
+            config_data (Dict[str, Any]): Configuration data
+
+        Returns:
+            bool: True if successful, False otherwise
+        """
         try:
             with open(self.config_file, 'w', encoding='utf-8') as f:
                 yaml.dump(config_data, f, allow_unicode=True)
-            self.config = config_data
+            self.config = config_data # udpate config
             logger.info("Configuration saved successfully")
             return True
         except Exception as e:
@@ -44,7 +58,11 @@ class Config:
             return False
     
     def write_default(self) -> bool:
-        """Write default configuration"""
+        """Write default configuration
+
+        Returns:
+            bool: True if successful, False otherwise
+        """
         logger.info("Writing default configuration")
         return self.save_config(self.default_config.copy())
     

@@ -5,6 +5,8 @@ from typing import List, Set
 from .config import config
 from .usb_copier import USBCopier
 from .logger import logger
+import win32file
+import win32api
 
 class USBMonitor:
     """USB device monitoring class"""
@@ -30,8 +32,6 @@ class USBMonitor:
         """Check if drive is a USB device"""
         try:
             # Get drive volume information
-            import win32file
-            import win32api
             drive_type = win32file.GetDriveType(drive)
             return drive_type == win32file.DRIVE_REMOVABLE
         except Exception as e:
@@ -46,7 +46,7 @@ class USBMonitor:
         return added_drives
     
     def start_monitor(self):
-        """Start monitoring"""
+        """Start monitoring with a thread"""
         if not self.monitoring:
             self.monitoring = True
             self.monitor_thread = threading.Thread(target=self._monitor_loop, daemon=True)

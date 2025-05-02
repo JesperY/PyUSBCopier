@@ -3,11 +3,22 @@ import shutil
 from typing import List, Set
 from .config import config
 from .logger import logger
+import win32api
 
 class USBCopier:
     """USB copier class"""
     def __init__(self):
         self.stop_flag = False
+    
+    def get_usb_device_id(self, drive: str) -> str:
+        """Get unique identifier for USB device"""
+        try:
+            volume_name = win32api.GetVolumeInformation(drive + "\\")[0] or "NoName"
+            volume_serial = win32api.GetVolumeInformation(drive + "\\")[1]
+            return f"{volume_name}_{volume_serial}"
+        except Exception as e:
+            logger.error(f"Failed to get USB device ID: {e}")
+            return os.path.basename(drive)
     
     def do_copy(self, drive: str) -> bool:
         """Execute copy operation"""
@@ -15,11 +26,15 @@ class USBCopier:
             # Get whitelist configuration
             white_list = config.white_list
             
-            # Create destination directory
-            backup_dir = os.path.join(config.backup_dst, os.path.basename(drive))
+            # Get USB device unique identifier
+            device_id = self.get_usb_device_id(drive)
+            
+            # Create destination directory using device ID
+            backup_dir = os.path.join(config.backup_dst, device_id)
+            logger.debug(f"Backup directory: {backup_dir}")
             os.makedirs(backup_dir, exist_ok=True)
             
-            logger.info(f"Starting to copy files from {drive} to {backup_dir}")
+            logger.info(f"Starting to copy files from {drive} (ID: {device_id}) to {backup_dir}")
             # Copy files
             self._copy_files(drive, backup_dir, white_list)
             logger.info(f"Copy completed: {drive} -> {backup_dir}")
@@ -41,7 +56,7 @@ class USBCopier:
             rel_path = os.path.relpath(root, src_dir)
             if rel_path != '.':
                 dir_parts = rel_path.split(os.sep)
-                if not any(part in white_list['dirname'] for part in dir_parts):
+                if any(part in white_list['dirname'] for part in dir_parts):
                     continue
             
             # Create destination directory
@@ -60,6 +75,8 @@ class USBCopier:
                 
                 if (filename in white_list['filename'] or 
                     file_ext in white_list['suffix']):
+                    continue
+                else:
                     src_file = os.path.join(root, file)
                     dst_file = os.path.join(dst_root, file)
                     
