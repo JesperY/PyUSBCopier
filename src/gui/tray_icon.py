@@ -13,6 +13,7 @@ class TrayIcon(QObject):
     monitor_toggled = pyqtSignal(bool)  # True=start monitoring, False=stop monitoring
     copy_stopped = pyqtSignal()  # Stop copy signal
     app_exit = pyqtSignal()  # Exit application signal
+    autostart_toggled = pyqtSignal(bool)  # True=enable autostart, False=disable autostart
     
     def __init__(self, app):
         super().__init__()
@@ -94,6 +95,12 @@ class TrayIcon(QObject):
             self.edit_config_action.triggered.connect(self.open_config_editor)
             self.tray_menu.addAction(self.edit_config_action)
             
+            # Autostart option
+            self.autostart_action = QAction("Start with Windows")
+            self.autostart_action.setCheckable(True)
+            self.autostart_action.triggered.connect(self.toggle_autostart)
+            self.tray_menu.addAction(self.autostart_action)
+            
             # Add separator
             self.tray_menu.addSeparator()
             
@@ -115,10 +122,40 @@ class TrayIcon(QObject):
         except Exception as e:
             logger.error(f"Error creating system tray icon: {e}")
     
+    def show_notification(self, title: str, message: str, icon=QSystemTrayIcon.MessageIcon.Information, duration=5000):
+        """Show a system notification
+        
+        Args:
+            title (str): Notification title
+            message (str): Notification message
+            icon: Icon type (Information, Warning, Critical)
+            duration (int): Display duration in milliseconds
+        """
+        try:
+            # Check if system supports messages
+            if self.tray_icon.supportsMessages():
+                self.tray_icon.showMessage(title, message, icon, duration)
+                logger.info(f"Showing notification: {title} - {message}")
+            else:
+                logger.warning("System does not support tray notifications")
+        except Exception as e:
+            logger.error(f"Failed to show notification: {e}")
+            
     def toggle_monitor(self):
         """Toggle monitoring status"""
         is_monitoring = self.status_action.text() == "Status: Monitoring"
         self.monitor_toggled.emit(not is_monitoring)
+    
+    def toggle_autostart(self):
+        """Toggle autostart setting"""
+        enable = self.autostart_action.isChecked()
+        logger.info(f"{'Enabling' if enable else 'Disabling'} autostart")
+        self.autostart_toggled.emit(enable)
+    
+    def update_autostart_status(self, is_enabled: bool):
+        """Update autostart menu item status"""
+        self.autostart_action.setChecked(is_enabled)
+        logger.info(f"Autostart status updated: {'enabled' if is_enabled else 'disabled'}")
     
     def stop_current_copy(self):
         """Stop current copy operation"""
