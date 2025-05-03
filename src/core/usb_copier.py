@@ -45,6 +45,11 @@ class USBCopier:
         finally:
             self.stop_flag = False
     
+    def stop_current_copy(self):
+        """Stop current copy operation"""
+        self.stop_flag = True
+        logger.info("Copy operation will be stopped at next opportunity")
+    
     def _copy_files(self, src_dir: str, dst_dir: str, white_list: dict):
         """Recursively copy files"""
         for root, dirs, files in os.walk(src_dir):
@@ -68,6 +73,7 @@ class USBCopier:
                 if self.stop_flag:
                     logger.info("Copy operation stopped")
                     break
+                
                 # Check if filename and extension are in whitelist
                 filename = os.path.basename(file)
                 file_ext = os.path.splitext(file)[1].lower()
@@ -78,7 +84,7 @@ class USBCopier:
                 else:
                     src_file = os.path.join(root, file)
                     dst_file = os.path.join(dst_root, file)
-
+                    
                     if os.path.exists(dst_file):
                         # Check if destination file is newer than source file
                         src_mtime = os.path.getmtime(src_file)
@@ -92,7 +98,7 @@ class USBCopier:
                                 logger.error(f"Failed to update file {src_file}: {e}")
                         else:
                             logger.debug(f"Skipped: {src_file} (destination is newer)")
-
+ 
                     else:
                         try:
                             shutil.copy2(src_file, dst_file)
