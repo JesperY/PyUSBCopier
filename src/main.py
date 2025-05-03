@@ -9,8 +9,9 @@ import logging
 import socket
 import tempfile
 import ctypes
+import winreg
 from PyQt6.QtWidgets import QApplication, QWidget, QMessageBox
-from PyQt6.QtCore import QObject, pyqtSignal
+from PyQt6.QtCore import QObject, pyqtSignal, QTimer
 from PyQt6.QtGui import QIcon
 
 
@@ -33,6 +34,73 @@ except ImportError:
     from src.core.config import Config
     from src.gui.icons import get_icon, get_resource_path
     from src.core.logger import logger
+
+class AutoStartManager:
+    """Manages application autostart functionality"""
+    def __init__(self, app_name="USB Backup Tool"):
+        self.app_name = app_name
+        self.registry_key = r"Software\Microsoft\Windows\CurrentVersion\Run"
+    
+    def set_autostart(self, enable=True):
+        """Enable or disable autostart
+        
+        Args:
+            enable (bool): True to enable autostart, False to disable
+        
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        try:
+            # Get executable path
+            executable = sys.executable
+            
+            # If running from a frozen executable (PyInstaller)
+            if getattr(sys, 'frozen', False):
+                executable = os.path.abspath(sys.executable)
+            # If running from a Python script
+            else:
+                script_path = os.path.abspath(sys.argv[0])
+                executable = f'"{executable}" "{script_path}"'
+            
+            # Open registry key
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, self.registry_key, 0, 
+                               winreg.KEY_SET_VALUE) as registry_key:
+                
+                if enable:
+                    # Add to startup
+                    winreg.SetValueEx(registry_key, self.app_name, 0, winreg.REG_SZ, executable)
+                    logger.info(f"Added {self.app_name} to autostart with command: {executable}")
+                else:
+                    # Remove from startup if exists
+                    try:
+                        winreg.DeleteValue(registry_key, self.app_name)
+                        logger.info(f"Removed {self.app_name} from autostart")
+                    except FileNotFoundError:
+                        # Key doesn't exist, nothing to remove
+                        logger.info(f"{self.app_name} was not in autostart")
+            
+            return True
+        except Exception as e:
+            logger.error(f"Failed to {'enable' if enable else 'disable'} autostart: {e}")
+            return False
+    
+    def is_autostart_enabled(self):
+        """Check if autostart is enabled
+        
+        Returns:
+            bool: True if enabled, False otherwise
+        """
+        try:
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, self.registry_key, 0,
+                               winreg.KEY_READ) as registry_key:
+                try:
+                    winreg.QueryValueEx(registry_key, self.app_name)
+                    return True
+                except FileNotFoundError:
+                    return False
+        except Exception as e:
+            logger.error(f"Failed to check autostart status: {e}")
+            return False
 
 class SingleInstanceChecker:
     """Class to ensure only one instance of the application runs at a time"""
@@ -136,6 +204,9 @@ class USBBackupApp(QObject):
         self.usb_copier = USBCopier()
         self.monitor = USBMonitor()
         
+        # Initialize autostart manager
+        self.autostart_manager = AutoStartManager()
+        
         # Create system tray icon
         self.tray_icon = TrayIcon(self.app)
         
@@ -143,8 +214,24 @@ class USBBackupApp(QObject):
         self.tray_icon.monitor_toggled.connect(self.toggle_monitor)
         self.tray_icon.copy_stopped.connect(self.stop_current_copy)
         self.tray_icon.app_exit.connect(self.exit_app)
+        self.tray_icon.autostart_toggled.connect(self.set_autostart)
+        
+        # Initialize autostart status
+        autostart_enabled = self.is_autostart_enabled()
+        self.tray_icon.update_autostart_status(autostart_enabled)
         
         logger.info("Application initialization complete")
+        
+        # Show startup notification after a short delay
+        QTimer.singleShot(500, self.show_startup_notification)
+    
+    def show_startup_notification(self):
+        """Show startup notification"""
+        self.tray_icon.show_notification(
+            "USB Backup Tool",
+            "USB Backup Tool is now running in the background.\nThe application will automatically backup USB devices when connected.",
+            duration=8000
+        )
     
     def toggle_monitor(self, start: bool):
         """Toggle monitoring status"""
@@ -176,6 +263,21 @@ class USBBackupApp(QObject):
         # Run application main loop
         logger.info("Application starting to run")
         return self.app.exec()
+    
+    def set_autostart(self, enable=True):
+        """Set application to start automatically with Windows"""
+        result = self.autostart_manager.set_autostart(enable)
+        if result:
+            self.tray_icon.show_notification(
+                "Autostart Settings", 
+                f"Application will {'start with Windows' if enable else 'not start with Windows'}.",
+                duration=3000
+            )
+        return result
+    
+    def is_autostart_enabled(self):
+        """Check if autostart is enabled"""
+        return self.autostart_manager.is_autostart_enabled()
 
 def show_already_running_message():
     """Show message that application is already running"""
@@ -221,9 +323,7 @@ def main():
         else:
             sys.exit(1)
 
-# TODO 开机自启动   
 # TODO 配置文件保存到系统目录，更新版本后自动读取默认配置文件
-# TODO 启动提示
 # TODO 优化更新方式，能否在软件中自动拉取更新
 # TODO 日志文件按日期保存
 if __name__ == "__main__":
