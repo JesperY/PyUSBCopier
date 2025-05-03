@@ -147,7 +147,6 @@ def main():
 # TODO 启动提示
 # TODO 优化更新方式，能否在软件中自动拉取更新
 # TODO 仅复制较新的文件
-# TODO 备份目录使用卷标识符
 # TODO 日志文件按日期保存
 if __name__ == "__main__":
     main() 
