@@ -6,7 +6,7 @@ def setup_logger():
     """Configure and return a logger"""
     # Create logger
     logger = logging.getLogger('USBBackup')
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.DEBUG)
     
     # Create log directory
     log_dir = 'logs'

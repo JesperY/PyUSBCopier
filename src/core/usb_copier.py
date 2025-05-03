@@ -68,7 +68,6 @@ class USBCopier:
                 if self.stop_flag:
                     logger.info("Copy operation stopped")
                     break
-                
                 # Check if filename and extension are in whitelist
                 filename = os.path.basename(file)
                 file_ext = os.path.splitext(file)[1].lower()
@@ -79,9 +78,24 @@ class USBCopier:
                 else:
                     src_file = os.path.join(root, file)
                     dst_file = os.path.join(dst_root, file)
-                    
-                    try:
-                        shutil.copy2(src_file, dst_file)
-                        logger.debug(f"Copied: {src_file} -> {dst_file}")
-                    except Exception as e:
-                        logger.error(f"Failed to copy file {src_file}: {e}") 
+
+                    if os.path.exists(dst_file):
+                        # Check if destination file is newer than source file
+                        src_mtime = os.path.getmtime(src_file)
+                        dst_mtime = os.path.getmtime(dst_file)
+                        
+                        if src_mtime > dst_mtime:
+                            try:
+                                shutil.copy2(src_file, dst_file)
+                                logger.debug(f"Updated: {src_file} -> {dst_file}")
+                            except Exception as e:
+                                logger.error(f"Failed to update file {src_file}: {e}")
+                        else:
+                            logger.debug(f"Skipped: {src_file} (destination is newer)")
+
+                    else:
+                        try:
+                            shutil.copy2(src_file, dst_file)
+                            logger.debug(f"Copied: {src_file} -> {dst_file}")
+                        except Exception as e:
+                            logger.error(f"Failed to copy file {src_file}: {e}") 
