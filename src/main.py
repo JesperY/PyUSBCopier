@@ -6,7 +6,10 @@ This script serves as the entry point for the USB Backup application.
 import sys
 import os
 import logging
-from PyQt6.QtWidgets import QApplication, QWidget
+import socket
+import tempfile
+import ctypes
+from PyQt6.QtWidgets import QApplication, QWidget, QMessageBox
 from PyQt6.QtCore import QObject, pyqtSignal
 from PyQt6.QtGui import QIcon
 
@@ -30,6 +33,53 @@ except ImportError:
     from src.core.config import Config
     from src.gui.icons import get_icon, get_resource_path
     from src.core.logger import logger
+
+class SingleInstanceChecker:
+    """Class to ensure only one instance of the application runs at a time"""
+    def __init__(self, unique_id="usb_backup_app_lock"):
+        self.unique_id = unique_id
+        self.mutex_name = f'Global\\{unique_id}'
+        self.socket = None
+        self.port = 45678  # Arbitrary port for socket-based lock
+    
+    def is_running_windows(self):
+        """Check if another instance is running using Windows mutex"""
+        try:
+            # Try to create a named mutex
+            mutex = ctypes.windll.kernel32.CreateMutexW(None, False, self.mutex_name)
+            last_error = ctypes.windll.kernel32.GetLastError()
+            
+            # ERROR_ALREADY_EXISTS indicates another instance is running
+            if last_error == 183:  # ERROR_ALREADY_EXISTS
+                if mutex:
+                    ctypes.windll.kernel32.CloseHandle(mutex)
+                return True
+            return False
+        except Exception as e:
+            logger.error(f"Error checking for running instance (Windows): {e}")
+            return False
+    
+    def is_running_socket(self):
+        """Check if another instance is running using socket binding"""
+        try:
+            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.socket.bind(('localhost', self.port))
+            self.socket.listen(1)
+            return False
+        except socket.error:
+            return True
+    
+    def is_running(self):
+        """Check if another instance of the application is running"""
+        if sys.platform == 'win32':
+            return self.is_running_windows()
+        else:
+            return self.is_running_socket()
+    
+    def cleanup(self):
+        """Clean up resources"""
+        if self.socket:
+            self.socket.close()
 
 class USBBackupApp(QObject):
     """USB backup application main class"""
@@ -127,13 +177,43 @@ class USBBackupApp(QObject):
         logger.info("Application starting to run")
         return self.app.exec()
 
+def show_already_running_message():
+    """Show message that application is already running"""
+    # Create a temporary QApplication if needed
+    app = QApplication.instance() or QApplication(sys.argv)
+    
+    # Set icon for the message box
+    icon_path = get_resource_path('icon.ico')
+    if os.path.exists(icon_path):
+        app.setWindowIcon(QIcon(icon_path))
+    
+    # Show message
+    QMessageBox.information(
+        None, 
+        "USB Backup Tool",
+        "USB Backup Tool is already running.\nCheck your system tray for the icon.",
+        QMessageBox.StandardButton.Ok
+    )
+
 def main():
     """Application entry point"""
     try:
+        # Check if application is already running
+        instance_checker = SingleInstanceChecker()
+        if instance_checker.is_running():
+            logger.info("Application is already running. Exiting.")
+            show_already_running_message()
+            return 0
+        
         logger.info("USB Backup Tool starting")
         app_instance = USBBackupApp()
         # Ensure object is not garbage collected
-        sys.exit(app_instance.run())
+        result = app_instance.run()
+        
+        # Clean up instance checker resources
+        instance_checker.cleanup()
+        
+        return result
     except Exception as e:
         logger.error(f"Application failed to start: {e}", exc_info=True)
         if 'app' in locals():
@@ -141,12 +221,10 @@ def main():
         else:
             sys.exit(1)
 
-# TODO 避免重复运行
 # TODO 开机自启动   
 # TODO 配置文件保存到系统目录，更新版本后自动读取默认配置文件
 # TODO 启动提示
 # TODO 优化更新方式，能否在软件中自动拉取更新
-# TODO 仅复制较新的文件
 # TODO 日志文件按日期保存
 if __name__ == "__main__":
-    main() 
+    sys.exit(main()) 
