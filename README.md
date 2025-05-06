@@ -27,6 +27,6 @@
 * **后缀白名单那**: 以白名单的后缀结尾的文件不会执行备份。
 
 **修改配置之后请不要忘记点击保存配置**
-> 配置文件和日志文件默认存放在 `%APPDATA%\Roaming\USBBackup` 路径下，日志文件默认存放在 `APPDATA%\local\USBBackup\Logs` 路径下。
+> 配置文件和日志文件默认存放在 `%APPDATA%\Roaming\USBBackup` 路径下，日志文件默认存放在 `%APPDATA%\local\USBBackup\Logs` 路径下。
 ## tips
 本项目的灵感来自于 [USBCopyer](https://github.com/kenvix/USBCopyer)，这款使用 C# 实现的备份软件曾几次拯救我的数据于水火之中。但令人遗憾的是在我目前的主力机上这款软件一直在闪退而无法使用。
