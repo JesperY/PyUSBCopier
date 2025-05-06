@@ -4,6 +4,15 @@ on:
   push:
     tags:
       - 'v*.*.*'  # 当推送符合v*.*.*(如v1.0.0)格式的标签时触发
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (without v prefix)'
+        required: true
+        default: '1.0.0'
+
+permissions:
+  contents: write
 
 permissions:
   contents: write
@@ -29,22 +38,50 @@ jobs:
       
       - name: Get tag version
         id: get_version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
+          else
+            echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+          fi
         shell: bash
+
+      - name: Create git tag
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          echo "Creating tag v${{ env.VERSION }}"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch --tags
+          git tag -a "v${{ env.VERSION }}" -m "Release v${{ env.VERSION }}"
+          git push origin "v${{ env.VERSION }}"
+          echo "Tag v${{ env.VERSION }} created and pushed"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify tag
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          git fetch --tags
+          git tag -l
+          echo "Current tag: v${{ env.VERSION }}"
+        shell: bash
+
+      - name: Display directory structure
+        run: |
+          dir /s
+        shell: cmd
       
       - name: Build with PyInstaller
         run: |
-          pyinstaller --onefile --windowed --icon=icon.ico --name=PyUSBCopier_${{ env.VERSION }} main.py
-        # 参数说明：
-        # --onefile: 打包为单个exe文件
-        # --windowed: 运行时不显示控制台窗口
-        # --icon: 指定应用图标（请确保icon.ico文件存在）
-        # --name: 指定输出文件名称
+          pyinstaller USBBackup.spec
+        # 使用spec文件打包，spec文件中已配置好资源文件
         
-      # - name: Create zip archive
-        # run: |
-          # cd dist
-          # powershell Compress-Archive -Path PyUSBCopier_${{ env.VERSION }}.exe -DestinationPath PyUSBCopier_${{ env.VERSION }}.zip
+      - name: Rename output file
+        run: |
+          copy dist\USBBackup.exe dist\PyUSBCopier_${{ env.VERSION }}.exe
+        shell: cmd
+        
       - name: Create Release
         id: create_release
         uses: softprops/action-gh-release@v1
