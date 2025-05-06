@@ -326,5 +326,8 @@ def main():
 # TODO 配置文件保存到系统目录，更新版本后自动读取默认配置文件
 # TODO 优化更新方式，能否在软件中自动拉取更新
 # TODO 日志文件按日期保存
+# TODO 正则白名单
+# FIXME Copy:Idle 状态没有变化
+# TODO 配置文件和日志存放在一起
 if __name__ == "__main__":
     sys.exit(main()) 
