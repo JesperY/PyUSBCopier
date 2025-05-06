@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*.*.*'  # 当推送符合v*.*.*(如v1.0.0)格式的标签时触发
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: windows-latest  # 使用Windows环境构建
@@ -45,8 +48,6 @@ jobs:
       - name: Create Release
         id: create_release
         uses: softprops/action-gh-release@v1
-        permissions:
-          contents: write
         with:
           name: PyUSBCopier v${{ env.VERSION }}
           draft: false
